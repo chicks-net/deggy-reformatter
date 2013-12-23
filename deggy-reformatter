@@ -9,3 +9,38 @@ die "no $filename" unless -f $filename;
 
 my $text = `unrtf --text '$filename' | grep -v '^###'`;
 print "got " . length($text) . " characters\n";
+
+my @lines = split(/\n/,$text);
+my @newlines;
+
+my $continue_flag;
+foreach my $line (@lines) {
+	if ($line =~ /[AP]M[ ]*$/) {
+		if ($line =~ /[ ]*$/) {
+			$continue_flag = 1;
+		} else {
+			$continue_flag = 0;
+		}
+
+		if ($line =~ /AM[ ]*$/) {
+			$line =~ s/AM//;
+		}
+
+		if ($line =~ /PM[ ]*$/) {
+			$line =~ /(\d+):(\d+):(\d+) PM/;
+			my $newtime = sprintf("%02d:%02d:%02d", $1+12, $2, $3);
+			$line =~ s/(\d+):(\d+):(\d+) PM/$newtime/;
+		}
+
+		push(@newlines,$line);
+	} elsif ($continue_flag) {
+		$newlines[ scalar( @newlines ) - 1 ] .= $line;
+		$continue_flag = 0;
+	} else {
+		push(@newlines,$line);
+	}
+}
+
+print "\n\n----------------------begin-redone-----------------\n";
+print join("\n",@newlines);
+print "\n\n";
