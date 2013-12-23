@@ -3,6 +3,9 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use RTF::Parser;
 
-print "uses loaded\n";
+my ($filename) = @ARGV;
+die "no $filename" unless -f $filename;
+
+my $text = `unrtf --text '$filename' | grep -v '^###'`;
+print "got " . length($text) . " characters\n";
