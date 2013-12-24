@@ -17,7 +17,7 @@ my $continue_flag;
 foreach my $line (@lines) {
 	if ($line =~ /[AP]M[ ]*$/) {
 		if ($line =~ /[ ]*$/) {
-			$continue_flag = 1;
+			$continue_flag = 2;
 		} else {
 			$continue_flag = 0;
 		}
@@ -35,7 +35,7 @@ foreach my $line (@lines) {
 		push(@newlines,$line);
 	} elsif ($continue_flag) {
 		$newlines[ scalar( @newlines ) - 1 ] .= $line;
-		$continue_flag = 0;
+		$continue_flag--;
 	} else {
 		push(@newlines,$line);
 	}
