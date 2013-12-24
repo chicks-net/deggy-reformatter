@@ -23,12 +23,18 @@ foreach my $line (@lines) {
 		}
 
 		if ($line =~ /AM[ ]*$/) {
-			$line =~ s/AM//;
+			$line =~ /(\d+):(\d+):(\d+) AM/;
+			my($h,$m,$s) = ($1,$2,$3);
+			$h = 0 if $h == 12;
+			my $newtime = sprintf("%02u:%02u:%02u", $h, $m, $s);
+			$line =~ s/(\d+):(\d+):(\d+) AM/$newtime/;
 		}
 
 		if ($line =~ /PM[ ]*$/) {
 			$line =~ /(\d+):(\d+):(\d+) PM/;
-			my $newtime = sprintf("%02d:%02d:%02d", $1+12, $2, $3);
+			my($h,$m,$s) = ($1,$2,$3);
+			$h += 12 unless $h == 12;
+			my $newtime = sprintf("%02u:%02u:%02u", $h, $m, $s);
 			$line =~ s/(\d+):(\d+):(\d+) PM/$newtime/;
 		}
 
