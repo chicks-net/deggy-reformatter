@@ -65,5 +65,20 @@ foreach my $line (@lines) {
 }
 
 print "\n\n----------------------begin-redone-----------------\n";
-print join("\n",@newlines);
-print "\n\n";
+my $started = 0;
+my $hit = [];
+foreach my $line (@newlines) {
+	if ($line =~ /Start/) {
+		if ($started) {
+			print "# had " . scalar(@$hit) . " hits\n";
+		}
+		$started = 1;
+		$hit = [];
+	}
+
+	print "$line\n";
+
+	if ($line =~ /Check Point (\d+)/) {
+		push(@$hit,$1);
+	}
+}
