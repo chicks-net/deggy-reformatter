@@ -66,19 +66,32 @@ foreach my $line (@lines) {
 
 print "\n\n----------------------begin-redone-----------------\n";
 my $started = 0;
-my $hit = [];
+my $hits = [];
+my $need_hits = [ 1 .. 7 ];
 foreach my $line (@newlines) {
 	if ($line =~ /Start/) {
 		if ($started) {
-			print "# had " . scalar(@$hit) . " hits\n";
+			my $missing = [];
+			NEED: foreach my $need (@$need_hits) {
+				foreach my $hit (@$hits) {
+					next NEED if $hit == $need;
+				}
+				push(@$missing,$need);
+			}
+			my $hit_count = scalar(@$hits);
+			if (scalar @$missing) {
+				print "# ISSUE: had $hit_count swipes, missing point " . join(",",@$missing) . "\n";
+			} elsif ($hit_count > scalar @$need_hits) {
+				print "# ISSUE: extra swipe ($hit_count total)\n";
+			}
 		}
 		$started = 1;
-		$hit = [];
+		$hits = [];
 	}
 
 	print "$line\n";
 
 	if ($line =~ /Check Point (\d+)/) {
-		push(@$hit,$1);
+		push(@$hits,$1);
 	}
 }
