@@ -66,6 +66,7 @@ foreach my $line (@lines) {
 
 print "\n\n----------------------begin-redone-----------------\n";
 my $started = 0;
+my $started_at;
 my $hits = [];
 my $need_hits = [ 1 .. 7 ];
 foreach my $line (@newlines) {
@@ -80,13 +81,26 @@ foreach my $line (@newlines) {
 			}
 			my $hit_count = scalar(@$hits);
 			if (scalar @$missing) {
-				print "# ISSUE: had $hit_count swipes, missing point " . join(",",@$missing) . "\n";
+				print "# $started_at ISSUE: had $hit_count swipes, missing point " . join(",",@$missing) . "\n";
 			} elsif ($hit_count > scalar @$need_hits) {
-				print "# ISSUE: extra swipe ($hit_count total)\n";
+				print "# $started_at ISSUE: extra swipe ($hit_count total)\n";
 			}
+
+			# did it start at the right time?
+			$started_at =~ m{^(\d+)/(\d+)/(\d+) (\d+):(\d+):(\d+)};
+			my ($month,$day,$year,$hour,$minute,$secound) = ($1,$2,$3,$4,$5,$6);
+			unless ($minute>0 and $minute<30) {
+				print "# $started_at ISSUE: starts at bad minute ($minute)\n";
+			}
+
+			# TODO: don't skip any hours
+
+			# TODO: always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
 		}
 		$started = 1;
 		$hits = [];
+		$started_at = $line;
+		$started_at =~ s/\s+Check.*$//;
 	}
 
 	print "$line\n";
