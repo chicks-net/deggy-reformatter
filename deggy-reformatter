@@ -15,9 +15,26 @@ my @newlines;
 
 my $continue_flag;
 foreach my $line (@lines) {
-	if ($line =~ /[AP]M[ ]*$/) {
+	next if $line =~ /^Printed on/;
+	next if $line =~ /^Range/;
+	next if $line =~ /^DOWNLOAD REPORT/;
+	next if $line =~ /^by touch/;
+	next if $line =~ /^Deggy Corp/;
+	next if $line =~ /^Touch date/;
+	next if $line =~ /^Description/;
+	next if $line =~ /^\d+ of \d+/;
+	next if $line =~ /^[- ]*$/;
+	next if $line =~ m{^\d+/\d+/\d+ - \d+/\d+/\d+};
+
+	if ($line =~ /^Pen download/) {
+		$continue_flag = 1;
+		push(@newlines,$line);
+	} elsif ($continue_flag) {
+		$newlines[ scalar( @newlines ) - 1 ] .= $line;
+		$continue_flag--;
+	} elsif ($line =~ /[AP]M[ ]*$/) {
 		if ($line =~ /[ ]*$/) {
-			$continue_flag = 2;
+			$continue_flag = 1;
 		} else {
 			$continue_flag = 0;
 		}
@@ -39,9 +56,9 @@ foreach my $line (@lines) {
 		}
 
 		push(@newlines,$line);
-	} elsif ($continue_flag) {
-		$newlines[ scalar( @newlines ) - 1 ] .= $line;
-		$continue_flag--;
+	} elsif ($line =~ /^Customer.Site/) {
+		$continue_flag = 1;
+		push(@newlines,$line);
 	} else {
 		push(@newlines,$line);
 	}
