@@ -43,7 +43,7 @@ foreach my $line (@lines) {
 			$line =~ /(\d+):(\d+):(\d+) AM/;
 			my($h,$m,$s) = ($1,$2,$3);
 			$h = 0 if $h == 12;
-			my $newtime = sprintf("%02u:%02u:%02u", $h, $m, $s);
+			my $newtime = sprintf("       %02u:%02u:%02u", $h, $m, $s);
 			$line =~ s/(\d+):(\d+):(\d+) AM/$newtime/;
 		}
 
@@ -51,7 +51,7 @@ foreach my $line (@lines) {
 			$line =~ /(\d+):(\d+):(\d+) PM/;
 			my($h,$m,$s) = ($1,$2,$3);
 			$h += 12 unless $h == 12;
-			my $newtime = sprintf("%02u:%02u:%02u", $h, $m, $s);
+			my $newtime = sprintf("       %02u:%02u:%02u", $h, $m, $s);
 			$line =~ s/(\d+):(\d+):(\d+) PM/$newtime/;
 		}
 
@@ -87,7 +87,7 @@ foreach my $line (@newlines) {
 			}
 
 			# did it start at the right time?
-			$started_at =~ m{^(\d+)/(\d+)/(\d+) (\d+):(\d+):(\d+)};
+			$started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)};
 			my ($month,$day,$year,$hour,$minute,$secound) = ($1,$2,$3,$4,$5,$6);
 			unless ($minute>0 and $minute<30) {
 				print "# $started_at ISSUE: starts at bad minute ($minute)\n";
@@ -101,6 +101,8 @@ foreach my $line (@newlines) {
 		$hits = [];
 		$started_at = $line;
 		$started_at =~ s/\s+Check.*$//;
+
+		print "\n";
 	}
 
 	print "$line\n";
