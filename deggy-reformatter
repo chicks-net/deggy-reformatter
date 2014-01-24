@@ -2,66 +2,79 @@
 
 use strict;
 use warnings;
+use Carp;
 use Data::Dumper;
 
 my ($filename) = @ARGV;
-die "no $filename" unless -f $filename;
+croak "no $filename" unless -f $filename;
 
 my $text = `unrtf --text '$filename' | grep -v '^###'`;
 print "got " . length($text) . " characters\n";
 
-my @lines = split(/\n/,$text);
-my @newlines;
+my @raw_lines = split(/\n/x,$text);
 
-my $continue_flag;
-foreach my $line (@lines) {
-	next if $line =~ /^Printed on/;
-	next if $line =~ /^Range/;
-	next if $line =~ /^DOWNLOAD REPORT/;
-	next if $line =~ /^by touch/;
-	next if $line =~ /^Deggy Corp/;
-	next if $line =~ /^Touch date/;
-	next if $line =~ /^Description/;
-	next if $line =~ /^\d+ of \d+/;
-	next if $line =~ /^[- ]*$/;
-	next if $line =~ m{^\d+/\d+/\d+ - \d+/\d+/\d+};
+my @ingested_lines = ingest(@raw_lines);
 
-	if ($line =~ /^Pen download/) {
-		$continue_flag = 1;
-		push(@newlines,$line);
-	} elsif ($continue_flag) {
-		$newlines[ scalar( @newlines ) - 1 ] .= $line;
-		$continue_flag--;
-	} elsif ($line =~ /[AP]M[ ]*$/) {
-		if ($line =~ /[ ]*$/) {
+sub ingest {
+	my(@lines) = @_;
+	my @newlines;
+	my $continue_flag;
+	foreach my $line (@lines) {
+		next if $line =~ /^Printed[ ]on/x;
+		next if $line =~ /^Range/x;
+		next if $line =~ /^DOWNLOAD[ ]REPORT/x;
+		next if $line =~ /^by[ ]touch/x;
+		next if $line =~ /^Deggy[ ]Corp/x;
+		next if $line =~ /^Touch[ ]date/x;
+		next if $line =~ /^Description/x;
+		next if $line =~ /^\d+[ ]of[ ]\d+/x;
+		next if $line =~ /^[- ]*$/x;
+		next if $line =~ m{^\d+/\d+/\d+[ ]-[ ]\d+/\d+/\d+}x;
+
+		if ($line =~ /^Pen[ ]download/x) {
 			$continue_flag = 1;
+			push(@newlines,$line);
+		} elsif ($continue_flag) {
+			$newlines[ scalar( @newlines ) - 1 ] .= $line;
+			$continue_flag--;
+		} elsif ($line =~ /[AP]M[ ]*$/x) {
+			if ($line =~ /[ ]*$/x) {
+				$continue_flag = 1;
+			} else {
+				$continue_flag = 0;
+			}
+
+			if ($line =~ /AM[ ]*$/x) {
+				if ($line =~ /(\d+):(\d+):(\d+)[ ]AM/x) {
+					my($h,$m,$s) = ($1,$2,$3);
+					$h = 0 if $h == 12;
+					my $newtime = sprintf("       %02u:%02u:%02u", $h, $m, $s);
+					$line =~ s/(\d+):(\d+):(\d+)[ ]AM/$newtime/x;
+				} else {
+					croak "bad format in $line";
+				}
+			}
+
+			if ($line =~ /PM[ ]*$/x) {
+				if ($line =~ /(\d+):(\d+):(\d+)[ ]PM/x) {
+					my($h,$m,$s) = ($1,$2,$3);
+					$h += 12 unless $h == 12;
+					my $newtime = sprintf("       %02u:%02u:%02u", $h, $m, $s);
+					$line =~ s/(\d+):(\d+):(\d+)[ ]PM/$newtime/x;
+				} else {
+					croak "bad format in $line";
+				}
+			}
+
+			push(@newlines,$line);
+		} elsif ($line =~ /^Customer.Site/x) {
+			$continue_flag = 1;
+			push(@newlines,$line);
 		} else {
-			$continue_flag = 0;
+			push(@newlines,$line);
 		}
-
-		if ($line =~ /AM[ ]*$/) {
-			$line =~ /(\d+):(\d+):(\d+) AM/;
-			my($h,$m,$s) = ($1,$2,$3);
-			$h = 0 if $h == 12;
-			my $newtime = sprintf("       %02u:%02u:%02u", $h, $m, $s);
-			$line =~ s/(\d+):(\d+):(\d+) AM/$newtime/;
-		}
-
-		if ($line =~ /PM[ ]*$/) {
-			$line =~ /(\d+):(\d+):(\d+) PM/;
-			my($h,$m,$s) = ($1,$2,$3);
-			$h += 12 unless $h == 12;
-			my $newtime = sprintf("       %02u:%02u:%02u", $h, $m, $s);
-			$line =~ s/(\d+):(\d+):(\d+) PM/$newtime/;
-		}
-
-		push(@newlines,$line);
-	} elsif ($line =~ /^Customer.Site/) {
-		$continue_flag = 1;
-		push(@newlines,$line);
-	} else {
-		push(@newlines,$line);
 	}
+	return @newlines;
 }
 
 print "\n\n----------------------begin-redone-----------------\n";
@@ -69,7 +82,7 @@ my $started = 0;
 my $started_at;
 my $hits = [];
 my $need_hits = [ 1 .. 7 ];
-foreach my $line (@newlines) {
+foreach my $line (@ingested_lines) {
 	if ($line =~ /Start/) {
 		if ($started) {
 			my $missing = [];
@@ -87,10 +100,13 @@ foreach my $line (@newlines) {
 			}
 
 			# did it start at the right time?
-			$started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)};
-			my ($month,$day,$year,$hour,$minute,$secound) = ($1,$2,$3,$4,$5,$6);
-			unless ($minute>0 and $minute<30) {
-				print "# $started_at ISSUE: starts at bad minute ($minute)\n";
+			if ($started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x) {
+				my ($month,$day,$year,$hour,$minute,$secound) = ($1,$2,$3,$4,$5,$6);
+				unless ($minute>0 and $minute<30) {
+					print "# $started_at ISSUE: starts at bad minute ($minute)\n";
+				}
+			} else {
+				croak "bad format in '$started_at'";
 			}
 
 			# TODO: don't skip any hours
@@ -100,14 +116,14 @@ foreach my $line (@newlines) {
 		$started = 1;
 		$hits = [];
 		$started_at = $line;
-		$started_at =~ s/\s+Check.*$//;
+		$started_at =~ s/\s+Check.*$//x;
 
 		print "\n";
 	}
 
 	print "$line\n";
 
-	if ($line =~ /Check Point (\d+)/) {
+	if ($line =~ /Check[ ]Point[ ](\d+)/x) {
 		push(@$hits,$1);
 	}
 }
