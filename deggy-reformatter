@@ -103,7 +103,7 @@ foreach my $line (@ingested_lines) {
 			# did it start at the right time?
 			if ( $started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
 				my ( $month, $day, $year, $hour, $minute, $secound ) = ( $1, $2, $3, $4, $5, $6 );
-				unless ( $minute > 0 and $minute < 30 ) {
+				unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
 					print "# $started_at ISSUE: starts at bad minute ($minute)\n";
 				}
 			} else {
