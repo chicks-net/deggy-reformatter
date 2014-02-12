@@ -82,37 +82,12 @@ my $started = 0;
 my $started_at;
 my $hits      = [];
 my $need_hits = [ 1 .. 7 ];
+my $fuzz = 5;
+
 foreach my $line (@ingested_lines) {
 	if ( $line =~ /Start/ ) {
 		if ($started) {
-			my $missing = [];
-			NEED: foreach my $need (@$need_hits) {
-				foreach my $hit (@$hits) {
-					next NEED if $hit == $need;
-				}
-				push( @$missing, $need );
-			}
-			my $hit_count = scalar(@$hits);
-			if ( scalar @$missing ) {
-				print "# $started_at ISSUE: had $hit_count swipes, missing point "
-				  . join( ",", @$missing ) . "\n";
-			} elsif ( $hit_count > scalar @$need_hits ) {
-				print "# $started_at ISSUE: extra swipe ($hit_count total)\n";
-			}
-
-			# did it start at the right time?
-			if ( $started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
-				my ( $month, $day, $year, $hour, $minute, $secound ) = ( $1, $2, $3, $4, $5, $6 );
-				unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
-					print "# $started_at ISSUE: starts at bad minute ($minute)\n";
-				}
-			} else {
-				croak "bad format in '$started_at'";
-			}
-
-			# TODO: don't skip any hours
-
-			# TODO: always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
+			validations();
 		}
 		$started    = 1;
 		$hits       = [];
@@ -127,4 +102,36 @@ foreach my $line (@ingested_lines) {
 	if ( $line =~ /Check[ ]Point[ ](\d+)/x ) {
 		push( @$hits, $1 );
 	}
+}
+validations();
+
+sub validations {
+	my $missing = [];
+	NEED: foreach my $need (@$need_hits) {
+		foreach my $hit (@$hits) {
+			next NEED if $hit == $need;
+		}
+		push( @$missing, $need );
+	}
+	my $hit_count = scalar(@$hits);
+	if ( scalar @$missing ) {
+		print "# $started_at ISSUE: had $hit_count swipes, missing point "
+		  . join( ",", @$missing ) . "\n";
+	} elsif ( $hit_count > scalar @$need_hits ) {
+		print "# $started_at ISSUE: extra swipe ($hit_count total)\n";
+	}
+
+	# did it start at the right time?
+	if ( $started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
+		my ( $month, $day, $year, $hour, $minute, $secound ) = ( $1, $2, $3, $4, $5, $6 );
+		unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
+			print "# $started_at ISSUE: starts at bad minute ($minute)\n";
+		}
+	} else {
+		croak "bad format in '$started_at'";
+	}
+
+	# TODO: don't skip any hours
+
+	# TODO: always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
 }
