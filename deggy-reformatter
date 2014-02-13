@@ -127,10 +127,10 @@ sub validations {
 		my $next_date = parseDate($next_start);
 
 		my $duration = $next_date->subtract_datetime_absolute( $prev_date );
-		my $seconds = $duration->in_units( 'seconds' );
+		my $start_seconds = $duration->in_units( 'seconds' );
 
-		unless (abs($seconds) < $fuzz) {
-			print "# double start $started_at within ${seconds}s of next start, only allowed ${fuzz}s\n";
+		unless (abs($start_seconds) < $fuzz) {
+			print "# double start $started_at within ${start_seconds}s of next start, only allowed ${fuzz}s\n";
 		}
 
 		return; # skip rest of checks since they will confuse folks
@@ -146,7 +146,7 @@ sub validations {
 
 	# did it start at the right time?
 	if ( $started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
-		my ( $month, $day, $year, $hour, $minute, $second ) = ( $1, $2, $3, $4, $5, $6 );
+		my ( $month, $day, $year, $hour, $minute, undef ) = ( $1, $2, $3, $4, $5, $6 );
 		unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
 			print "# $started_at ISSUE: starts at bad minute ($minute)\n";
 		}
