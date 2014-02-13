@@ -8,4 +8,4 @@ Requires
 
 * Perl
 * unrtf
-* no extra Perl modules
+* Perl module DateTime (debian package libdatetime-perl)
