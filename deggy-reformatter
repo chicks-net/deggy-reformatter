@@ -85,6 +85,7 @@ print "\n\n----------------------begin-redone-----------------\n";
 my $started = 0;
 my $started_at;
 my $hits = [];
+my %hour_done;
 
 foreach my $line (@ingested_lines) {
 	if ( $line =~ /Start/ ) {
@@ -106,6 +107,7 @@ foreach my $line (@ingested_lines) {
 	}
 }
 validations();
+post_validations();
 
 sub validations {
 	my ($next_line) = @_;
@@ -159,7 +161,44 @@ sub validations {
 
 	# TODO: don't skip any hours
 
-	# TODO: always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
+	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
+	my $this_date = parseDate($started_at);
+	my $dow = $this_date->day_of_week;
+	if ($dow >= 5) { # Friday-Sunday
+		my $this_hour = $this_date->hour();
+		$hour_done{$dow}->{$this_hour}++;
+	}
+	# core hours validation completed in post_validations()
+
+	# all good
+	return 0;
+}
+
+sub post_validations {
+	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
+	my $must_dos = {
+		5 => [18..23],
+		6 => [0..6,15..23],
+		7 => [0..19],
+	};
+	my $day_decode = {
+		5 => 'Fri',
+		6 => 'Sat',
+		7 => 'Sun',
+	};
+
+	foreach my $day (sort keys %$must_dos) {
+		my $humanday = $day_decode->{$day};
+
+		foreach my $hour (@{$must_dos->{$day}}) {
+			unless ( $hour_done{$day}->{$hour} ) {
+				printf("## ISSUE: skipped core hour $humanday %02i00\n",$hour);
+			}
+		}
+	}
+
+	# all good
+	return 0;
 }
 
 sub parseDate {
