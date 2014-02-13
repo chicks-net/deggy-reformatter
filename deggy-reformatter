@@ -81,7 +81,7 @@ sub ingest {
 print "\n\n----------------------begin-redone-----------------\n";
 my $started = 0;
 my $started_at;
-my $hits      = [];
+my $hits = [];
 
 foreach my $line (@ingested_lines) {
 	if ( $line =~ /Start/ ) {
@@ -106,9 +106,9 @@ validations();
 
 sub validations {
 	my ($next_line) = @_;
-	my $need_hits = [ 1 .. 7 ];
-	my $fuzz = 5;
-	my $missing = [];
+	my $need_hits   = [ 1 .. 7 ];
+	my $fuzz        = 5;
+	my $missing     = [];
 
 	# look for missing points
 	NEED: foreach my $need (@$need_hits) {
@@ -119,27 +119,27 @@ sub validations {
 	}
 	my $hit_count = scalar(@$hits);
 
-	if ($hit_count == 1 and $next_line =~ /Start/) {
+	if ( $hit_count == 1 and $next_line =~ /Start/ ) {
 		my $next_start = $next_line;
 		$next_start =~ s/\s+Check.*$//x;
 
 		my $prev_date = parseDate($started_at);
 		my $next_date = parseDate($next_start);
 
-		my $duration = $next_date->subtract_datetime_absolute( $prev_date );
-		my $start_seconds = $duration->in_units( 'seconds' );
+		my $duration      = $next_date->subtract_datetime_absolute($prev_date);
+		my $start_seconds = $duration->in_units('seconds');
 
-		unless (abs($start_seconds) < $fuzz) {
-			print "# double start $started_at within ${start_seconds}s of next start, only allowed ${fuzz}s\n";
+		unless ( abs($start_seconds) < $fuzz ) {
+			print
+			  "# double start $started_at within ${start_seconds}s of next start, only allowed ${fuzz}s\n";
 		}
 
-		return; # skip rest of checks since they will confuse folks
+		return;    # skip rest of checks since they will confuse folks
 	}
 
 	# basic swipe match check
 	if ( scalar @$missing ) {
-		print "# $started_at ISSUE: had $hit_count swipes, missing point "
-		  . join( ",", @$missing ) . "\n";
+		print "# $started_at ISSUE: had $hit_count swipes, missing point " . join( ",", @$missing ) . "\n";
 	} elsif ( $hit_count > scalar @$need_hits ) {
 		print "# $started_at ISSUE: extra swipe ($hit_count total)\n";
 	}
@@ -170,13 +170,13 @@ sub parseDate {
 	}
 
 	my $date_object = DateTime->new(
-		year	=> $year,
-		month	=> $month,
-		day	=> $day,
-		hour	=> $hour,
-		minute	=> $minute,
-		second	=> $second,
-		time_zone	=> 'America/New_York',
+		year      => $year,
+		month     => $month,
+		day       => $day,
+		hour      => $hour,
+		minute    => $minute,
+		second    => $second,
+		time_zone => 'America/New_York',
 	);
 	croak "did not get an object" unless ref $date_object;
 
