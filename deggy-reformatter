@@ -71,6 +71,9 @@ sub ingest {
 		} elsif ( $line =~ /^Customer.Site/x ) {
 			$continue_flag = 1;
 			push( @newlines, $line );
+		} elsif ( $line =~ /^Number[ ]of[ ]/x ) {
+			$continue_flag = 1;
+			push( @newlines, $line );
 		} else {
 			push( @newlines, $line );
 		}
