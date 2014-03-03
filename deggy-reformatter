@@ -163,11 +163,12 @@ sub validations {
 
 	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
 	my $this_date = parseDate($started_at);
-	my $dow = $this_date->day_of_week;
-	if ($dow >= 5) { # Friday-Sunday
+	my $dow       = $this_date->day_of_week;
+	if ( $dow >= 5 ) {                               # Friday-Sunday
 		my $this_hour = $this_date->hour();
 		$hour_done{$dow}->{$this_hour}++;
 	}
+
 	# core hours validation completed in post_validations()
 
 	# all good
@@ -175,11 +176,12 @@ sub validations {
 }
 
 sub post_validations {
+
 	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
 	my $must_dos = {
-		5 => [18..23],
-		6 => [0..6,15..23],
-		7 => [0..19],
+		5 => [ 18 .. 23 ],
+		6 => [ 0 .. 6, 15 .. 23 ],
+		7 => [ 0 .. 19 ],
 	};
 	my $day_decode = {
 		5 => 'Fri',
@@ -187,12 +189,12 @@ sub post_validations {
 		7 => 'Sun',
 	};
 
-	foreach my $day (sort keys %$must_dos) {
+	foreach my $day ( sort keys %$must_dos ) {
 		my $humanday = $day_decode->{$day};
 
-		foreach my $hour (@{$must_dos->{$day}}) {
+		foreach my $hour ( @{ $must_dos->{$day} } ) {
 			unless ( $hour_done{$day}->{$hour} ) {
-				printf("## ISSUE: skipped core hour $humanday %02i00\n",$hour);
+				printf( "## ISSUE: skipped core hour $humanday %02i00\n", $hour );
 			}
 		}
 	}
