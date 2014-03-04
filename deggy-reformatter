@@ -166,7 +166,7 @@ sub validations {
 	my $ok_interval = 3600 * 1.6;
 	unless ($start_seconds < $ok_interval) {
 		my $hours = sprintf("%.2fh",$start_seconds / 3600);
-		print "# $hours elapsed since last run\n";
+		print "# $hours elapses before next run\n";
 	}
 
 
