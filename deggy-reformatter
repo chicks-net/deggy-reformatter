@@ -124,16 +124,19 @@ sub validations {
 	}
 	my $hit_count = scalar(@$hits);
 
-	if ( $hit_count == 1 and $next_line =~ /Start/ ) {
-		my $next_start = $next_line;
-		$next_start =~ s/\s+Check.*$//x;
-
-		my $prev_date = parseDate($started_at);
+	# how long since previous line?
+	my $next_start = $next_line;
+	$next_start =~ s/\s+Check.*$//x;
+	my $prev_date = parseDate($started_at);
+	my $start_seconds = 0;
+	if ( length $next_start ) {
 		my $next_date = parseDate($next_start);
-
 		my $duration      = $next_date->subtract_datetime_absolute($prev_date);
-		my $start_seconds = $duration->in_units('seconds');
+		$start_seconds = $duration->in_units('seconds');
+	}
 
+	# is it a double start?
+	if ( $hit_count == 1 and $next_line =~ /Start/ ) {
 		unless ( abs($start_seconds) < $fuzz ) {
 			print
 			  "# double start $started_at within ${start_seconds}s of next start, only allowed ${fuzz}s\n";
@@ -160,6 +163,12 @@ sub validations {
 	}
 
 	# TODO: don't skip any hours
+	my $ok_interval = 3600 * 1.6;
+	unless ($start_seconds < $ok_interval) {
+		my $hours = sprintf("%.2fh",$start_seconds / 3600);
+		print "# $hours elapsed since last run\n";
+	}
+
 
 	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
 	my $this_date = parseDate($started_at);
