@@ -127,11 +127,11 @@ sub validations {
 	# how long since previous line?
 	my $next_start = $next_line;
 	$next_start =~ s/\s+Check.*$//x;
-	my $prev_date = parseDate($started_at);
+	my $prev_date     = parseDate($started_at);
 	my $start_seconds = 0;
 	if ( length $next_start ) {
 		my $next_date = parseDate($next_start);
-		my $duration      = $next_date->subtract_datetime_absolute($prev_date);
+		my $duration  = $next_date->subtract_datetime_absolute($prev_date);
 		$start_seconds = $duration->in_units('seconds');
 	}
 
@@ -164,16 +164,15 @@ sub validations {
 
 	# TODO: don't skip any hours
 	my $ok_interval = 3600 * 1.6;
-	unless ($start_seconds < $ok_interval) {
-		my $hours = sprintf("%.2fh",$start_seconds / 3600);
+	unless ( $start_seconds < $ok_interval ) {
+		my $hours = sprintf( "%.2fh", $start_seconds / 3600 );
 		print "# $hours elapses before next run\n";
 	}
-
 
 	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
 	my $this_date = parseDate($started_at);
 	my $dow       = $this_date->day_of_week;
-	if ( $dow >= 5 ) {                               # Friday-Sunday
+	if ( $dow >= 5 ) {    # Friday-Sunday
 		my $this_hour = $this_date->hour();
 		$hour_done{$dow}->{$this_hour}++;
 	}
