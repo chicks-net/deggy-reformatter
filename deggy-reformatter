@@ -164,7 +164,7 @@ sub validations {
 		croak "bad format in '$started_at'";
 	}
 
-	# TODO: don't skip any hours
+	# show skipped hours
 	my $ok_interval = 3600 * 1.6;
 	unless ( $start_seconds < $ok_interval ) {
 		my $hours = sprintf( "%.2fh", $start_seconds / 3600 );
