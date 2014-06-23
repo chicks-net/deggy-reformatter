@@ -125,7 +125,7 @@ sub validations {
 	my $hit_count = scalar(@$hits);
 
 	# how long since previous line?
-	my $next_start = $next_line;
+	my $next_start = $next_line || '';
 	$next_start =~ s/\s+Check.*$//x;
 	my $prev_date     = parseDate($started_at);
 	my $start_seconds = 0;
@@ -133,6 +133,8 @@ sub validations {
 		my $next_date = parseDate($next_start);
 		my $duration  = $next_date->subtract_datetime_absolute($prev_date);
 		$start_seconds = $duration->in_units('seconds');
+	} else {
+		return;
 	}
 
 	# is it a double start?
