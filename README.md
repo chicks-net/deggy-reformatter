@@ -19,3 +19,9 @@ Requires
 * Perl
 * unrtf
 * Perl module DateTime (debian package libdatetime-perl)
+
+Plans
+-----
+
+* integrate schedule from a google drive spreadsheet
+* sort core hours checks into timeline with the rest of the checks
