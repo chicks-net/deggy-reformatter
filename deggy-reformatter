@@ -88,6 +88,7 @@ my $hits = [];
 my %hour_done;
 
 foreach my $line (@ingested_lines) {
+	my $day_of_week;
 	if ( $line =~ /Start/ ) {
 		if ($started) {
 			validations($line);
@@ -96,10 +97,13 @@ foreach my $line (@ingested_lines) {
 		$hits       = [];
 		$started_at = $line;
 		$started_at =~ s/\s+Check.*$//x;
+		my $date_object     = parseDate($started_at);
+		$day_of_week = $date_object->day_name();
 
 		print "\n";
 	}
 
+	print "$day_of_week " if defined $day_of_week;
 	print "$line\n";
 
 	if ( $line =~ /Check[ ]Point[ ](\d+)/x ) {
@@ -128,6 +132,7 @@ sub validations {
 	my $next_start = $next_line || '';
 	$next_start =~ s/\s+Check.*$//x;
 	my $prev_date     = parseDate($started_at);
+	$started_at = $prev_date->day_name() . ' ' . $started_at;
 	my $start_seconds = 0;
 	if ( length $next_start ) {
 		my $next_date = parseDate($next_start);
@@ -156,8 +161,8 @@ sub validations {
 	}
 
 	# did it start at the right time?
-	if ( $started_at =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
-		my ( $month, $day, $year, $hour, $minute, undef ) = ( $1, $2, $3, $4, $5, $6 );
+	if ( $started_at =~ m{^(\w+\s+)?(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
+		my ( undef, $month, $day, $year, $hour, $minute, undef ) = ( $1, $2, $3, $4, $5, $6, $7 );
 		unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
 			print "# $started_at WARN: starts at bad minute ($minute)\n";
 		}
@@ -218,8 +223,8 @@ sub parseDate {
 	my ($deggy_date_string) = @_;
 	my ( $month, $day, $year, $hour, $minute, $second );
 
-	if ( $deggy_date_string =~ m{^(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
-		( $month, $day, $year, $hour, $minute, $second ) = ( $1, $2, $3, $4, $5, $6 );
+	if ( $deggy_date_string =~ m{^(\w+\s+)?(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
+		( undef, $month, $day, $year, $hour, $minute, $second ) = ( $1, $2, $3, $4, $5, $6, $7 );
 	} else {
 		croak "bad format in '$deggy_date_string'";
 	}
