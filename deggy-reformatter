@@ -156,7 +156,7 @@ sub validations {
 		unless ( abs($start_seconds) < $fuzz ) {
 			my $start_minutes = sprintf("%.1f",$start_seconds/60);
 			print
-			  "# $started_at WARN: double start within ${start_minutes} minutes of next start, only allowed ${fuzz}s\n";
+			  "# $started_at   WARN: double start within ${start_minutes} minutes of next start, only allowed ${fuzz}s\n";
 		}
 
 		return;    # skip rest of checks since they will confuse folks
@@ -164,16 +164,16 @@ sub validations {
 
 	# basic swipe match check
 	if ( scalar @$missing ) {
-		print "# $started_at ISSUE: had $hit_count swipes, missing point " . join( ",", @$missing ) . "\n";
+		print "# $started_at   ISSUE: had $hit_count swipes, missing point " . join( ",", @$missing ) . "\n";
 	} elsif ( $hit_count > scalar @$need_hits ) {
-		print "# $started_at ISSUE: extra swipe ($hit_count total)\n";
+		print "# $started_at   ISSUE: extra swipe ($hit_count total)\n";
 	}
 
 	# did it start at the right time?
 	if ( $started_at =~ m{^(\w+\s+)?(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
 		my ( undef, $month, $day, $year, $hour, $minute, undef ) = ( $1, $2, $3, $4, $5, $6, $7 );
 		unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
-			print "# $started_at WARN: starts at bad minute ($minute)\n";
+			print "# $started_at   WARN: starts at bad minute ($minute)\n";
 		}
 	} else {
 		croak "bad format in '$started_at'";
