@@ -140,8 +140,9 @@ sub validations {
 	# is it a double start?
 	if ( $hit_count == 1 and $next_line =~ /Start/ ) {
 		unless ( abs($start_seconds) < $fuzz ) {
+			my $start_minutes = sprintf("%.1f",$start_seconds/60);
 			print
-			  "# double start $started_at within ${start_seconds}s of next start, only allowed ${fuzz}s\n";
+			  "# $started_at WARN: double start within ${start_minutes} minutes of next start, only allowed ${fuzz}s\n";
 		}
 
 		return;    # skip rest of checks since they will confuse folks
