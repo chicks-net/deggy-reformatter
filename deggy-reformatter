@@ -110,8 +110,8 @@ foreach my $line (@ingested_lines) {
 	if (defined $line_date) {
 		my $date_object     = parseDate($line_date);
 		$day_of_week = $date_object->day_name();
+		print "$day_of_week ";
 	}
-	print "$day_of_week " if defined $day_of_week;
 
 	print "$line\n";
 
