@@ -88,7 +88,7 @@ my $hits = [];
 my %hour_done;
 
 foreach my $line (@ingested_lines) {
-	my $day_of_week;
+	my($day_of_week, $line_date);
 	if ( $line =~ /Start/ ) {
 		if ($started) {
 			validations($line);
@@ -97,13 +97,22 @@ foreach my $line (@ingested_lines) {
 		$hits       = [];
 		$started_at = $line;
 		$started_at =~ s/\s+Check.*$//x;
-		my $date_object     = parseDate($started_at);
-		$day_of_week = $date_object->day_name();
+		$line_date = $started_at;
 
 		print "\n";
+	} elsif ( $line =~ /Check Point/) {
+		my $tmp_line = $line;
+		$tmp_line =~ s/\s+Check.*$//x;
+		$line_date = $tmp_line;
 	}
 
+	# print day of week if available
+	if (defined $line_date) {
+		my $date_object     = parseDate($line_date);
+		$day_of_week = $date_object->day_name();
+	}
 	print "$day_of_week " if defined $day_of_week;
+
 	print "$line\n";
 
 	if ( $line =~ /Check[ ]Point[ ](\d+)/x ) {
