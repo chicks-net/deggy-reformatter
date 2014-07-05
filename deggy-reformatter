@@ -85,25 +85,27 @@ print "\n\n----------------------begin-redone-----------------\n";
 my $started = 0;
 my $started_at;
 my $hits = [];
+my $timeline = [];
 my %hour_done;
 
 foreach my $line (@ingested_lines) {
 	my($day_of_week, $line_date);
+
+	if ( $line =~ /Check Point/) {
+		my $tmp_line = $line;
+		$tmp_line =~ s/\s+Check.*$//x;
+		$line_date = $tmp_line;
+	}
+
 	if ( $line =~ /Start/ ) {
 		if ($started) {
 			validations($line);
 		}
 		$started    = 1;
 		$hits       = [];
-		$started_at = $line;
-		$started_at =~ s/\s+Check.*$//x;
-		$line_date = $started_at;
+		$started_at = $line_date;
 
 		print "\n";
-	} elsif ( $line =~ /Check Point/) {
-		my $tmp_line = $line;
-		$tmp_line =~ s/\s+Check.*$//x;
-		$line_date = $tmp_line;
 	}
 
 	# print day of week if available
@@ -111,7 +113,18 @@ foreach my $line (@ingested_lines) {
 		my $date_object     = parseDate($line_date);
 		$day_of_week = $date_object->day_name();
 		print "$day_of_week ";
+
+		my $content_line = $line;
+		$content_line =~ s/^.*(Check)/$1/;
+		push(@$timeline, {
+			when => $date_object,
+			day_of_week => $day_of_week,
+			whole_line => $line,
+			content_line => $content_line,
+			line_date => $line_date,
+		});
 	}
+
 
 	print "$line\n";
 
@@ -121,6 +134,20 @@ foreach my $line (@ingested_lines) {
 }
 validations();
 post_validations();
+
+#TODO: sort_timeline();
+
+foreach my $entry (@$timeline) {
+	my $when = $entry->{when};
+	my $day_of_week = $entry->{day_of_week};
+	my $line_date = $entry->{line_date};
+	my $whole_line = $entry->{whole_line};
+	my $content_line = $entry->{content_line};
+
+	$day_of_week = sprintf("%10s",$day_of_week);
+
+	print "$day_of_week $line_date       $content_line\n";
+}
 
 sub validations {
 	my ($next_line) = @_;
