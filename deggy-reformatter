@@ -146,6 +146,8 @@ validations();
 post_validations();
 sort_timeline();
 
+print "\n";
+
 foreach my $entry (@$timeline) {
 	my $when = $entry->{when};		# DateTime handle
 	my $day_of_week = $entry->{day_of_week}; # Wednesday
@@ -330,7 +332,9 @@ sub sort_timeline {
 		}
 	}
 	
-	# TODO: actually do sorting
+	# actually do sorting
+	my @tmp_timeline = sort { DateTime->compare( $a->{when}, $b->{when} ) } @$timeline;
+	$timeline = \@tmp_timeline;
 }
 
 sub parseDate {
