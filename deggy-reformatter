@@ -82,14 +82,16 @@ sub ingest {
 }
 
 print "\n\n----------------------begin-redone-----------------\n";
-my $started = 0;
-my $started_at;
-my $hits = [];
-my $timeline = [];
+my $started = 0;	# are we inside of one Deggy rounds
+my $started_at;		# when did this round start?
+my $hits = [];		# currend rounds hits
+my $timeline = [];	# GLOBAL timeline of event hashes
 my %hour_done;
+my $first_day;		# the earliest timed event spotted
 
 foreach my $line (@ingested_lines) {
 	my($day_of_week, $line_date);
+	my $blank_before = 0;
 
 	if ( $line =~ /Check Point/) {
 		my $tmp_line = $line;
@@ -104,29 +106,38 @@ foreach my $line (@ingested_lines) {
 		$started    = 1;
 		$hits       = [];
 		$started_at = $line_date;
+		$blank_before = 1;
 
 		print "\n";
 	}
 
-	# print day of week if available
+	# if it has a date, add it to the timeline
 	if (defined $line_date) {
 		my $date_object     = parseDate($line_date);
 		$day_of_week = $date_object->day_name();
-		print "$day_of_week ";
 
+		# track earliest when
+		$first_day = $date_object unless defined $first_day;
+		if ( DateTime->compare( $first_day, $date_object) > 0 ) {
+			$first_day = $date_object;
+		}
+		
+		# pull out the parts that aren't date or time related
 		my $content_line = $line;
 		$content_line =~ s/^.*(Check)/$1/;
+
 		push(@$timeline, {
 			when => $date_object,
 			day_of_week => $day_of_week,
 			whole_line => $line,
 			content_line => $content_line,
 			line_date => $line_date,
+			blank_before => $blank_before,
+			mark_issue => 0,
 		});
+	} else {
+		print "$line\n";
 	}
-
-
-	print "$line\n";
 
 	if ( $line =~ /Check[ ]Point[ ](\d+)/x ) {
 		push( @$hits, $1 );
@@ -135,17 +146,25 @@ foreach my $line (@ingested_lines) {
 validations();
 post_validations();
 
-#TODO: sort_timeline();
+sort_timeline();
 
 foreach my $entry (@$timeline) {
-	my $when = $entry->{when};
-	my $day_of_week = $entry->{day_of_week};
+	my $when = $entry->{when};		# DateTime handle
+	my $day_of_week = $entry->{day_of_week}; # Wednesday
 	my $line_date = $entry->{line_date};
 	my $whole_line = $entry->{whole_line};
 	my $content_line = $entry->{content_line};
+	my $blank_before = $entry->{blank_before} || 0;	# should it get a blank line before it
+	my $mark_issue = $entry->{mark_issue};	# is it an issue and the line should start with the # symbol
+	$mark_issue = 1 unless defined $mark_issue;
 
-	$day_of_week = sprintf("%10s",$day_of_week);
+	if ($mark_issue) {
+		$day_of_week = sprintf("# %8s",$day_of_week);
+	} else {
+		$day_of_week = sprintf("%10s",$day_of_week);
+	}
 
+	print "\n" if $blank_before;
 	print "$day_of_week $line_date       $content_line\n";
 }
 
@@ -228,6 +247,17 @@ sub validations {
 }
 
 sub post_validations {
+	my $day_decode;		# hashref: day number to name
+	my $date_cursor = $first_day->clone();
+	for (1..7) {
+		my $day_name = $date_cursor->day_name();
+		my $day_of_week = $date_cursor->day_of_week();
+		$day_decode->{$day_of_week} = {
+			human_day => $day_name,
+			date_object => $date_cursor->clone(),
+		};
+		$date_cursor->add( days => 1 );
+	}
 
 	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
 	my $must_dos = {
@@ -235,24 +265,45 @@ sub post_validations {
 		6 => [ 0 .. 6, 15 .. 23 ],
 		7 => [ 0 .. 19 ],
 	};
-	my $day_decode = {
-		5 => 'Fri',
-		6 => 'Sat',
-		7 => 'Sun',
-	};
 
 	foreach my $day ( sort keys %$must_dos ) {
-		my $humanday = $day_decode->{$day};
+		my $humanday = $day_decode->{$day}->{human_day};
 
 		foreach my $hour ( @{ $must_dos->{$day} } ) {
 			unless ( $hour_done{$day}->{$hour} ) {
-				printf( "## ISSUE: skipped core hour $humanday %02i00\n", $hour );
+				my $date_object = $day_decode->{$day}->{date_object}->clone();
+				$date_object->set( minute => 0, hour => $hour, second => 0 );
+				my $content_line = sprintf( "ISSUE: skipped core hour $humanday %02i00", $hour );
+				push (@$timeline,{
+					when => $date_object,
+					content_line => $content_line,
+					blank_before => 0,
+					mark_issue => 1,
+				});
 			}
 		}
 	}
 
 	# all good
 	return 0;
+}
+
+sub sort_timeline {
+	# quietly fill in gaps in data
+	foreach my $entry (@$timeline) {
+		my $when = $entry->{when};		# DateTime handle
+
+		unless (defined $entry->{day_of_week} ) {
+			$entry->{day_of_week} = $when->day_name;
+		}
+
+		unless (defined $entry->{line_date} ) {
+			#$entry->{line_date} = $when->strftime("%m/%d/%Y      %H:%M:%S");
+			$entry->{line_date} = $when->format_cldr("M/dd/yyyy        HH:mm:ss");
+		}
+	}
+	
+	# TODO: actually do sorting
 }
 
 sub parseDate {
