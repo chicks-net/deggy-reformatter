@@ -205,7 +205,6 @@ sub validations {
 			push (@$timeline,{
 				when => $prev_date->clone(),
 				content_line => $content_line,
-				blank_before => 0,
 				mark_issue => 1,
 			});
 		}
@@ -219,7 +218,6 @@ sub validations {
 		push (@$timeline,{
 			when => $prev_date->clone(),
 			content_line => $content_line,
-			blank_before => 0,
 			mark_issue => 1,
 		});
 	} elsif ( $hit_count > scalar @$need_hits ) {
@@ -227,7 +225,6 @@ sub validations {
 		push (@$timeline,{
 			when => $prev_date->clone(),
 			content_line => $content_line,
-			blank_before => 0,
 			mark_issue => 1,
 		});
 	}
@@ -240,7 +237,6 @@ sub validations {
 			push (@$timeline,{
 				when => $prev_date->clone(),
 				content_line => $content_line,
-				blank_before => 0,
 				mark_issue => 1,
 			});
 		}
@@ -256,7 +252,6 @@ sub validations {
 		push (@$timeline,{
 			when => $prev_date->clone(),
 			content_line => $content_line,
-			blank_before => 0,
 			mark_issue => 1,
 		});
 	}
@@ -306,7 +301,7 @@ sub post_validations {
 				push (@$timeline,{
 					when => $date_object,
 					content_line => $content_line,
-					blank_before => 0,
+					blank_before => 1,
 					mark_issue => 1,
 				});
 			}
