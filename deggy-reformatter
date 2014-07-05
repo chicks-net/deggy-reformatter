@@ -107,8 +107,6 @@ foreach my $line (@ingested_lines) {
 		$hits       = [];
 		$started_at = $line_date;
 		$blank_before = 1;
-
-		print "\n";
 	}
 
 	# if it has a date, add it to the timeline
@@ -143,9 +141,9 @@ foreach my $line (@ingested_lines) {
 		push( @$hits, $1 );
 	}
 }
+
 validations();
 post_validations();
-
 sort_timeline();
 
 foreach my $entry (@$timeline) {
@@ -201,8 +199,13 @@ sub validations {
 	if ( $hit_count == 1 and $next_line =~ /Start/ ) {
 		unless ( abs($start_seconds) < $fuzz ) {
 			my $start_minutes = sprintf("%.1f",$start_seconds/60);
-			print
-			  "# $started_at   WARN: double start within ${start_minutes} minutes of next start, only allowed ${fuzz}s\n";
+			my $content_line = "WARN: double start within ${start_minutes} minutes of next start, only allowed ${fuzz}s";
+			push (@$timeline,{
+				when => $prev_date->clone(),
+				content_line => $content_line,
+				blank_before => 0,
+				mark_issue => 1,
+			});
 		}
 
 		return;    # skip rest of checks since they will confuse folks
@@ -210,16 +213,34 @@ sub validations {
 
 	# basic swipe match check
 	if ( scalar @$missing ) {
-		print "# $started_at   ISSUE: had $hit_count swipes, missing point " . join( ",", @$missing ) . "\n";
+		my $content_line = "ISSUE: had $hit_count swipes, missing point " . join( ",", @$missing );
+		push (@$timeline,{
+			when => $prev_date->clone(),
+			content_line => $content_line,
+			blank_before => 0,
+			mark_issue => 1,
+		});
 	} elsif ( $hit_count > scalar @$need_hits ) {
-		print "# $started_at   ISSUE: extra swipe ($hit_count total)\n";
+		my $content_line = "ISSUE: extra swipe ($hit_count total)";
+		push (@$timeline,{
+			when => $prev_date->clone(),
+			content_line => $content_line,
+			blank_before => 0,
+			mark_issue => 1,
+		});
 	}
 
 	# did it start at the right time?
 	if ( $started_at =~ m{^(\w+\s+)?(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
 		my ( undef, $month, $day, $year, $hour, $minute, undef ) = ( $1, $2, $3, $4, $5, $6, $7 );
 		unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
-			print "# $started_at   WARN: starts at bad minute ($minute)\n";
+			my $content_line = "WARN: starts at bad minute ($minute)";
+			push (@$timeline,{
+				when => $prev_date->clone(),
+				content_line => $content_line,
+				blank_before => 0,
+				mark_issue => 1,
+			});
 		}
 	} else {
 		croak "bad format in '$started_at'";
@@ -229,7 +250,13 @@ sub validations {
 	my $ok_interval = 3600 * 1.6;
 	unless ( $start_seconds < $ok_interval ) {
 		my $hours = sprintf( "%.2fh", $start_seconds / 3600 );
-		print "# $hours elapses before next run\n";
+		my $content_line = "$hours elapses before next run";
+		push (@$timeline,{
+			when => $prev_date->clone(),
+			content_line => $content_line,
+			blank_before => 0,
+			mark_issue => 1,
+		});
 	}
 
 	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
