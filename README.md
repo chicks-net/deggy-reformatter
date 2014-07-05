@@ -23,5 +23,4 @@ Requires
 Plans
 -----
 
-* integrate schedule from a google drive spreadsheet
-* sort core hours checks into timeline with the rest of the checks
+* integrate schedule from a google drive spreadsheet or maybe somewhere else
