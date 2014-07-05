@@ -81,7 +81,7 @@ sub ingest {
 	return @newlines;
 }
 
-print "\n\n--------------------------------- begin redone ----------------------------\n";
+print "\n\n------------------------------------------- begin redone --------------------------------------\n";
 my $started = 0;	# are we inside of one Deggy rounds
 my $started_at;		# when did this round start?
 my $hits = [];		# currend rounds hits
