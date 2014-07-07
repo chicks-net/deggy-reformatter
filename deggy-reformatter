@@ -144,6 +144,7 @@ foreach my $line (@ingested_lines) {
 
 validations();
 post_validations();
+add_schedule();
 sort_timeline();
 
 print "\n";
@@ -354,4 +355,29 @@ sub parseDate {
 	croak "did not get an object" unless ref $date_object;
 
 	return $date_object;
+}
+
+sub add_schedule {
+#print "add_schedule:$first_day\n";
+	my $date_cursor = $first_day->clone();
+	for (1..7) {
+		my $day_name = $date_cursor->day_name();
+		my $day_of_week = $date_cursor->day_of_week();
+
+		foreach my $swap_hour (6, 14, 22) {
+			my $shift_datetime = $date_cursor->clone();
+			$shift_datetime->set( minute => 0, hour => $swap_hour, second => 0 );
+			my $content_line = "standard shift change for $day_name "
+					. sprintf("%02d00",$swap_hour);
+			push (@$timeline,{
+				when => $shift_datetime,
+				content_line => $content_line,
+				mark_issue => 1,
+				blank_before => 1,
+			});
+		}
+
+		# and now for tomorrow...
+		$date_cursor->add( days => 1 );
+	}
 }
