@@ -323,7 +323,7 @@ sub sort_timeline {
 
 		unless (defined $entry->{line_date} ) {
 			#$entry->{line_date} = $when->strftime("%m/%d/%Y      %H:%M:%S");
-			$entry->{line_date} = $when->format_cldr("M/dd/yyyy        HH:mm:ss");
+			$entry->{line_date} = $when->format_cldr("M/d/yyyy        HH:mm:ss");
 		}
 	}
 	
