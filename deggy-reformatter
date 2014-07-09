@@ -361,6 +361,16 @@ sub add_schedule {
 
 	#print "add_schedule:$first_day\n";
 
+	# make day of week decoder ring
+	my $decoder_cursor = $first_day->clone();
+	my @days_of_weeks;
+	for (1..7) {
+		my $day_name = $decoder_cursor->day_name();
+		push(@days_of_weeks,$day_name);
+		$decoder_cursor->add( days => 1 );
+	}
+	push(@days_of_weeks,@days_of_weeks); # next week
+
 	# read schedule.txt
 	my $schedule_filename = 'schedule.txt';
 
@@ -371,14 +381,23 @@ sub add_schedule {
 
 		foreach my $line (<$schedule_fh>) {
 			chomp($line);
-			if ($line =~ /^(\w+) (\d+)-(\d+)\t(\w+)$/) {
+			if ($line =~ /^#/) {
+				print "skipping schedule line: $line\n";
+			} elsif ($line =~ /^(\w+) (\d+)-(\d+)-(\d+) (\d+)-(\d+)\t(.+)$/) {
+				die "unimplemented: $line";
+			} elsif ($line =~ /^(\w+) (\d+)-(\d+)\t(\w+)$/) {
 				my ($day_of_week,$start_time,$end_time,$who) = ($1,$2,$3,$4);
-				print "line=(dow=$day_of_week,start=$start_time,end=$end_time,who=$who)\n";
+				#print "line=(dow=$day_of_week,start=$start_time,end=$end_time,who=$who)\n";
 				$start_time =~ s/^0+//;
 				$end_time =~ s/^0+//;
 				push(@{ $worked_schedule->{$day_of_week}->{$start_time} }, "$who starts shift");
-				if ($start_time eq '2200') {
-					#TODO: increment $day_of_week
+				if ($start_time eq '2200') { # find tomorrow
+					my $dow = 0;
+					while ($day_of_week ne $days_of_weeks[$dow]) {
+						$dow++;
+					}
+					$dow++; # and now tomorrow
+					$day_of_week = $days_of_weeks[$dow];
 				}
 				push(@{ $worked_schedule->{$day_of_week}->{$end_time} }, "$who ends shift");
 			} else {
