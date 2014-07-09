@@ -358,7 +358,39 @@ sub parseDate {
 }
 
 sub add_schedule {
-#print "add_schedule:$first_day\n";
+
+	#print "add_schedule:$first_day\n";
+
+	# read schedule.txt
+	my $schedule_filename = 'schedule.txt';
+
+	my ($worked_schedule);
+	if (-e $schedule_filename) {
+		my $schedule_fh;
+		open($schedule_fh,'<',$schedule_filename) or die "failed to open schedule file '$schedule_filename':$!";
+
+		foreach my $line (<$schedule_fh>) {
+			chomp($line);
+			if ($line =~ /^(\w+) (\d+)-(\d+)\t(\w+)$/) {
+				my ($day_of_week,$start_time,$end_time,$who) = ($1,$2,$3,$4);
+				print "line=(dow=$day_of_week,start=$start_time,end=$end_time,who=$who)\n";
+				$start_time =~ s/^0+//;
+				$end_time =~ s/^0+//;
+				push(@{ $worked_schedule->{$day_of_week}->{$start_time} }, "$who starts shift");
+				if ($start_time eq '2200') {
+					#TODO: increment $day_of_week
+				}
+				push(@{ $worked_schedule->{$day_of_week}->{$end_time} }, "$who ends shift");
+			} else {
+				warn "bad parse schedule line: '$line'";
+			}
+		}
+		close($schedule_fh) or die "failed to close schedule file '$schedule_filename':$!";
+	} else {
+		warn "no schedule file '$schedule_filename' found";
+	}
+
+	# loop through week
 	my $date_cursor = $first_day->clone();
 	for (1..7) {
 		my $day_name = $date_cursor->day_name();
@@ -369,6 +401,12 @@ sub add_schedule {
 			$shift_datetime->set( minute => 0, hour => $swap_hour, second => 0 );
 			my $content_line = "standard shift change for $day_name "
 					. sprintf("%02d00",$swap_hour);
+
+			if (defined $worked_schedule->{$day_name}->{"${swap_hour}00"}) {
+				$content_line .= " (";
+				$content_line .= join(", ", @{ $worked_schedule->{$day_name}->{"${swap_hour}00"} });
+				$content_line .= ")";
+			}
 			push (@$timeline,{
 				when => $shift_datetime,
 				content_line => $content_line,
