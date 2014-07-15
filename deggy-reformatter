@@ -88,6 +88,7 @@ my $hits = [];		# currend rounds hits
 my $timeline = [];	# GLOBAL timeline of event hashes
 my %hour_done;
 my $first_day;		# the earliest timed event spotted
+my $prev_end_date;	# the time for the last scan of the previous run for validations()
 
 foreach my $line (@ingested_lines) {
 	my($day_of_week, $line_date);
@@ -119,6 +120,8 @@ foreach my $line (@ingested_lines) {
 		if ( DateTime->compare( $first_day, $date_object) > 0 ) {
 			$first_day = $date_object;
 		}
+
+		$prev_end_date = $date_object->clone;
 		
 		# pull out the parts that aren't date or time related
 		my $content_line = $line;
@@ -169,6 +172,7 @@ foreach my $entry (@$timeline) {
 	print "$day_of_week $line_date       $content_line\n";
 }
 
+# checks for each Deggy run
 sub validations {
 	my ($next_line) = @_;
 	my $need_hits   = [ 1 .. 7 ];
@@ -187,12 +191,12 @@ sub validations {
 	# how long since previous line?
 	my $next_start = $next_line || '';
 	$next_start =~ s/\s+Check.*$//x;
-	my $prev_date     = parseDate($started_at);
-	$started_at = $prev_date->day_name() . ' ' . $started_at;
+	my $prev_start_date     = parseDate($started_at);
+	$started_at = $prev_start_date->day_name() . ' ' . $started_at;
 	my $start_seconds = 0;
 	if ( length $next_start ) {
 		my $next_date = parseDate($next_start);
-		my $duration  = $next_date->subtract_datetime_absolute($prev_date);
+		my $duration  = $next_date->subtract_datetime_absolute($prev_start_date);
 		$start_seconds = $duration->in_units('seconds');
 	} else {
 		return;
@@ -204,7 +208,7 @@ sub validations {
 			my $start_minutes = sprintf("%.1f",$start_seconds/60);
 			my $content_line = "WARN: double start within ${start_minutes} minutes of next start, only allowed ${fuzz}s";
 			push (@$timeline,{
-				when => $prev_date->clone(),
+				when => $prev_start_date->clone(),
 				content_line => $content_line,
 				mark_issue => 1,
 			});
@@ -217,14 +221,14 @@ sub validations {
 	if ( scalar @$missing ) {
 		my $content_line = "ISSUE: had $hit_count swipes, missing point " . join( ",", @$missing );
 		push (@$timeline,{
-			when => $prev_date->clone(),
+			when => $prev_end_date->clone(),
 			content_line => $content_line,
 			mark_issue => 1,
 		});
 	} elsif ( $hit_count > scalar @$need_hits ) {
 		my $content_line = "ISSUE: extra swipe ($hit_count total)";
 		push (@$timeline,{
-			when => $prev_date->clone(),
+			when => $prev_end_date->clone(),
 			content_line => $content_line,
 			mark_issue => 1,
 		});
@@ -236,7 +240,7 @@ sub validations {
 		unless ( $minute > 0 and $minute < 30 ) {    ## no critic (ProhibitNegativeExpressions)
 			my $content_line = "WARN: starts at bad minute ($minute)";
 			push (@$timeline,{
-				when => $prev_date->clone(),
+				when => $prev_start_date->clone(),
 				content_line => $content_line,
 				mark_issue => 1,
 			});
@@ -249,9 +253,9 @@ sub validations {
 	my $ok_interval = 3600 * 1.6;
 	unless ( $start_seconds < $ok_interval ) {
 		my $hours = sprintf( "%.2fh", $start_seconds / 3600 );
-		my $content_line = "$hours elapses before next run";
+		my $content_line = "NOTE: $hours elapses before next run";
 		push (@$timeline,{
-			when => $prev_date->clone(),
+			when => $prev_end_date->clone(),
 			content_line => $content_line,
 			mark_issue => 1,
 		});
