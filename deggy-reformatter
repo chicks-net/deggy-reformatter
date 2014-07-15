@@ -188,6 +188,15 @@ sub validations {
 	}
 	my $hit_count = scalar(@$hits);
 
+	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
+	# core hours validation completed in post_validations()
+	my $this_date = parseDate($started_at);
+	my $dow       = $this_date->day_of_week;
+	if ( $dow >= 5 ) {    # Friday-Sunday
+		my $this_hour = $this_date->hour();
+		$hour_done{$dow}->{$this_hour}++;
+	}
+
 	# how long since previous line?
 	my $next_start = $next_line || '';
 	$next_start =~ s/\s+Check.*$//x;
@@ -260,16 +269,6 @@ sub validations {
 			mark_issue => 1,
 		});
 	}
-
-	# always do Fri 1800 - Sat 0600 and Sat 1500 - Sun 1900
-	my $this_date = parseDate($started_at);
-	my $dow       = $this_date->day_of_week;
-	if ( $dow >= 5 ) {    # Friday-Sunday
-		my $this_hour = $this_date->hour();
-		$hour_done{$dow}->{$this_hour}++;
-	}
-
-	# core hours validation completed in post_validations()
 
 	# all good
 	return 0;
