@@ -388,7 +388,7 @@ sub add_schedule {
 				print "skipping schedule line: $line\n";
 			} elsif ($line =~ /^(\w+) (\d+)-(\d+)-(\d+) (\d+)-(\d+)\t(.+)$/) {
 				die "unimplemented: $line";
-			} elsif ($line =~ /^(\w+) (\d+)-(\d+)\t(\w+)$/) {
+			} elsif ($line =~ /^(\w+) (\d+)-(\d+)\t([\w ]+)$/) {
 				my ($day_of_week,$start_time,$end_time,$who) = ($1,$2,$3,$4);
 				#print "line=(dow=$day_of_week,start=$start_time,end=$end_time,who=$who)\n";
 				$start_time =~ s/^0+//;
