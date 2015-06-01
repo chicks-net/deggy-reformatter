@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Carp;
+use Data::Dumper;
+
+my ($raw_fh,$out_fh);
+open($raw_fh, '<', 'schedule.raw') or die "input open failed; $!";
+open($out_fh, '>', 'schedule.txt') or die "output open failed; $!";
+
+my $day_of_week;
+my $record_count = 0;
+while (my $line = <$raw_fh>) {
+	chomp($line);
+	next unless length $line;
+
+	if ($line =~ /(\w+)\s+\d+\/\d+\/\d+/) {
+		$day_of_week = $1;
+		next;
+	}
+	die "no header yet: '$line'" unless defined $day_of_week;
+
+	if ($line =~ /(\d+)\s*-\s*(\d+)\s+(.*)$/) {
+		my $start = $1;
+		my $end = $2;
+		my $name = $3;
+		print $out_fh "$day_of_week $start-$end\t$name\n";
+		$record_count++;
+	}
+}
+
+close($raw_fh);
+close($out_fh);
+
+print "processed $record_count schedule entries\n";
