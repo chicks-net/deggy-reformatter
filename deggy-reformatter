@@ -340,6 +340,7 @@ sub parseDate {
 	my ($deggy_date_string) = @_;
 	my ( $month, $day, $year, $hour, $minute, $second );
 
+#warn "parseDate $deggy_date_string";
 	if ( $deggy_date_string =~ m{^(\w+\s+)?(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
 		( undef, $month, $day, $year, $hour, $minute, $second ) = ( $1, $2, $3, $4, $5, $6, $7 );
 	} else {
@@ -353,7 +354,7 @@ sub parseDate {
 		hour      => $hour,
 		minute    => $minute,
 		second    => $second,
-		time_zone => 'America/New_York',
+		time_zone => 'Etc/UTC',
 	);
 	croak "did not get an object" unless ref $date_object;
 
