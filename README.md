@@ -17,8 +17,8 @@ Requires
 --------
 
 * Perl
-* unrtf
-* Perl module DateTime (debian package libdatetime-perl)
+* unrtf (deb/rpm is just `unrtf`)
+* Perl module DateTime (debian package `libdatetime-perl` or rpm `perl-DateTime`)
 
 Plans
 -----
