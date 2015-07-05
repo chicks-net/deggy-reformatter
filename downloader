@@ -1,0 +1,173 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use local::lib;
+use Data::Dumper;
+use lib '/home/chicks/Documents/git/life-graphs/bin';
+use LifeGraphs qw( write_file :defaults );
+use Net::IMAP::Simple::Gmail;
+use Email::MIME;
+use Email::MIME::Attachment::Stripper;
+use Term::ReadPassword;
+#use Lingua::EN::Fathom;
+
+# defaults
+my $user = 'chicks.net@gmail.com';
+my $pass = '';
+
+# arguments processing
+if (scalar @ARGV) {
+	# arguments, but not the bad kind
+	foreach my $arg (@ARGV) {
+		if ($arg eq '-h' or $arg eq '--help') {
+			die 'help';
+		} else {
+			die "unrecognized argument '$arg': you could try --help, but you might as well read the code";
+		}
+	}
+}
+
+unless (length $pass) {
+	$pass = read_password("$user password: ");
+}
+die "no password provided" unless length $pass;
+
+# connect and login
+my $server = 'imap.gmail.com';
+my $imap = Net::IMAP::Simple::Gmail->new( $server, use_ssl => 1 );
+die 'weird' unless defined $imap;
+unless ( $imap->login( $user, $pass ) ) {
+	warn "imap login failed: " . $imap->errstr . "\n";
+	die "no login";
+}
+print "# logged in as $user\n";
+
+# find reports
+#
+my $deggy_emails = $imap->run_search("subject:deggy label:inbox");
+my $deggy_nm = scalar @$deggy_emails;
+print "$deggy_nm in Deggy emails...\n";
+my $progress_counter = 0;
+my $deggy_out = '';
+
+foreach my $msg_number (@$deggy_emails) {
+	$msg_number =~ s/\r$//; # wtf?
+	my $message = imap_get($imap, $msg_number ); # or die
+
+	$progress_counter++;
+	if ($progress_counter % 20 == 0) {
+		print "\t$progress_counter/$deggy_nm messages handled\n";
+	}
+
+#	my $es = Email::Simple->new(join '', @{ $message });
+#	my $header_date = $es->header("Date");
+
+#	print "\n$msg_number $header_date :::\n";
+
+}
+print "\n";
+#$imap->close() or die ($imap->errstr . "\n");
+
+
+#
+# the end
+#
+
+$imap->quit() or die ($imap->errstr . "\n");
+
+#
+# SUBterrranean
+#
+
+sub deci {
+	my ($value) = @_;
+	my $formatted = sprintf("%.1f",$value);
+	return $formatted;
+}
+
+sub imap_get {
+	my ($imap,$msgnum) = @_;
+
+	my $message = $imap->get( $msgnum )        # or die....
+		or die ("\nIMAP:" . $imap->errstr . "\n[[msg $msgnum]]\n");
+
+	# TODO: cache here
+
+	return $message;
+}
+
+sub analyze_parts {
+	my (@parts) = @_;
+
+	my $out;
+	foreach my $prt (@parts) {
+		my $type = $prt->content_type;
+		#print "\ttype $type\n";
+
+		if ($type =~ /^text\/plain;/) {
+			my $body = $prt->body;
+			my $fathom = new Lingua::EN::Fathom;
+			$fathom->analyse_block($body,1);
+			my $words = $fathom->num_words || 0;
+			if ($words) {
+				my $p_big_words = $fathom->percent_complex_words || 0;
+				my $disp_big_words = sprintf("%4.1f%% big words",$p_big_words);
+
+				my $text_lines = $fathom->num_text_lines || 0;
+				my $blank_lines = $fathom->num_blank_lines;
+
+				my $fog = deci($fathom->fog);
+				my $kincaid = deci($fathom->kincaid);
+
+				$out .= "\t$words words, $disp_big_words, "
+					. "$text_lines text lines, "
+					. "$blank_lines blank lines, "
+					. "kincaid=$kincaid fog=$fog"
+					. "\n";
+			} else {
+				$out .= "\t0 words\n";
+			}
+
+		}
+	}
+
+	return $out;
+}
+
+sub other2proj {
+	my ($main_other) = @_;
+
+	my $project;
+
+	if ($main_other =~ /hancock/) {
+		$project = "HANCOCK";
+	} elsif  ($main_other =~ /(adiorucevic|amara|arsfz)/) {
+		$project = "AMARA";
+	} elsif  ($main_other =~ /(mocentric|abouriz|daron|juvenal|Mitri)/) {
+		$project = "MOCENTRIC";
+	} elsif  ($main_other =~ /catherine.law|maggie/i) {
+		$project = "CAPTIVE_PORTAL";
+	} elsif  ($main_other =~ /aud.love/) {
+		$project = "SAMSUNG";
+	} elsif  ($main_other =~ /heartspring/) {
+		$project = "PATENT";
+	} elsif  ($main_other =~ /nodrats/) {
+		$project = "DBCS";
+	} elsif  ($main_other =~ /ntmidcap|gwendolyne|c50chris|Ritter/) {
+		$project = "FINI_PROSPECT";
+	} elsif  ($main_other =~ /AdSense/) {
+		$project = "FINI_ADVERTS";
+	} elsif  ($main_other =~ /csstars\.com|sentara.com|cac-medmal|michael.todd/) {
+		$project = "IRESERVE_SENTARA";
+	} elsif  ($main_other =~ /tdsnyder/) {
+		$project = "ARBREA";
+	} elsif  ($main_other =~ /keytel|realestatebetty/) {
+		$project = "FAMILY";
+	}
+
+	return $project;
+}
+
+# a different end
+__END__
