@@ -1,0 +1,39 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Carp;
+use Data::Dumper;
+use DateTime;
+
+my $src_file = '/home/chicks/Downloads/Download.rtf';
+my $dest_dir = '/home/chicks/Documents/git/deggy-reformatter';
+
+die "no $src_file to work with\n" unless -f $src_file;
+
+my $text = `unrtf --text '$src_file' | grep -v '^###'`;
+print "got " . length($text) . " characters\n";
+
+my @lines = split(/\n/,$text);
+
+my $found = 0;
+my $date;
+foreach my $line (@lines) {
+	if ($found) {
+		($date) = split(/[ -]+/,$line);
+		last;
+	}
+	next unless $line =~ /Range:/;
+	$found++;
+}
+
+my ($month,$day,$year) = split(qr{/}, $date);
+
+my $iso_date = sprintf("%4d-%02d-%02d",$year,$month,$day);
+my $save_date = $iso_date;
+$save_date =~ s/-//g;
+
+my $cmd = "mv $src_file $dest_dir/DeggyReport${save_date}.rtf";
+print "$cmd\n";
+system($cmd);
+
