@@ -100,7 +100,7 @@ foreach my $line (@ingested_lines) {
 		$line_date = $tmp_line;
 	}
 
-	if ( $line =~ /Start/ ) {
+	if ( $line =~ /Start Cat/ ) {
 		if ($started) {
 			validations($line);
 		}
@@ -179,6 +179,8 @@ sub validations {
 	my $fuzz        = 5;
 	my $missing     = [];
 
+	croak "no started_at" unless defined $started_at and length $started_at;
+
 	# look for missing points
 	NEED: foreach my $need (@$need_hits) {
 		foreach my $hit (@$hits) {
@@ -202,6 +204,7 @@ sub validations {
 	$next_start =~ s/\s+Check.*$//x;
 	my $prev_start_date     = parseDate($started_at);
 	$started_at = $prev_start_date->day_name() . ' ' . $started_at;
+
 	my $start_seconds = 0;
 	if ( length $next_start ) {
 		my $next_date = parseDate($next_start);
@@ -340,6 +343,7 @@ sub parseDate {
 	my ($deggy_date_string) = @_;
 	my ( $month, $day, $year, $hour, $minute, $second );
 
+	croak "parseDate() did not get anything" unless length $deggy_date_string;
 #warn "parseDate $deggy_date_string";
 	if ( $deggy_date_string =~ m{^(\w+\s+)?(\d+)/(\d+)/(\d+)\s+(\d+):(\d+):(\d+)}x ) {
 		( undef, $month, $day, $year, $hour, $minute, $second ) = ( $1, $2, $3, $4, $5, $6, $7 );
