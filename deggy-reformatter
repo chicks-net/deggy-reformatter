@@ -24,6 +24,7 @@ sub ingest {
 		next if $line =~ /^Printed[ ]on/x;
 		next if $line =~ /^Range/x;
 		next if $line =~ /^DOWNLOAD[ ]REPORT/x;
+		next if $line =~ /^DOWNLOAD[ ]by[ ]CUSTOMER\/SITE[ ]REPORT/x;
 		next if $line =~ /^by[ ]touch/x;
 		next if $line =~ /^Deggy[ ]Corp/x;
 		next if $line =~ /^Touch[ ]date/x;
