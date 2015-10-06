@@ -37,3 +37,6 @@ my $cmd = "mv $src_file $dest_dir/DeggyReport${save_date}.rtf";
 print "$cmd\n";
 system($cmd);
 
+print "\n";
+print "next run:\t\t./deggy-reformatter DeggyReport${save_date}.rtf\n\n";
+
