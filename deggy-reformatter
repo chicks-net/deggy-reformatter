@@ -6,9 +6,31 @@ use Carp;
 use Data::Dumper;
 use DateTime;
 
+# constants
+my %canonical_day_of_week = (
+        'Sun'   =>      'Sunday',
+
+        'Mon'   =>      'Monday',
+
+        'Tue'   =>      'Tuesday',
+        'Tues'  =>      'Tuesday',
+
+        'Wed'   =>      'Wednesday',
+
+        'Thu'   =>      'Thursday',
+        'Thur'  =>      'Thursday',
+
+        'Fri'   =>      'Friday',
+
+        'Sat'   =>      'Saturday',
+        'Satur' =>      'Saturday',
+);
+
+# read arguments
 my ($filename) = @ARGV;
 croak "no $filename" unless -f $filename;
 
+# parse/read rtf
 my $text = `unrtf --text '$filename' | grep -v '^###'`;
 print "got " . length($text) . " characters\n";
 
@@ -91,6 +113,7 @@ my %hour_done;
 my $first_day;		# the earliest timed event spotted
 my $prev_end_date;	# the time for the last scan of the previous run for validations()
 
+# read lines into timeline
 foreach my $line (@ingested_lines) {
 	my($day_of_week, $line_date);
 	my $blank_before = 0;
@@ -153,6 +176,7 @@ sort_timeline();
 
 print "\n";
 
+# print out timeline
 foreach my $entry (@$timeline) {
 	my $when = $entry->{when};		# DateTime handle
 	my $day_of_week = $entry->{day_of_week}; # Wednesday
@@ -368,11 +392,10 @@ sub parseDate {
 
 sub add_schedule {
 	# read schedule.txt
-	my $schedule_filename = 'schedule.txt';
+	my $schedule_filename = 'schedule.raw';
 
-	my ($worked_schedule);
 	if (-e $schedule_filename) {
-		add_schedule_file($schedule_filename,$worked_schedule);
+		add_schedule_file($schedule_filename);
 	} else {
 		warn "no schedule file '$schedule_filename' found";
 	}
@@ -386,19 +409,14 @@ sub add_schedule {
 		foreach my $swap_hour (6, 14, 22) {
 			my $shift_datetime = $date_cursor->clone();
 			$shift_datetime->set( minute => 0, hour => $swap_hour, second => 0 );
-			my $content_line = "standard shift change for $day_name "
+			my $content_line = "shift change scheduled for $day_name "
 					. sprintf("%02d00",$swap_hour);
 
-			if (defined $worked_schedule->{$day_name}->{"${swap_hour}00"}) {
-				$content_line .= " (";
-				$content_line .= join(", ", @{ $worked_schedule->{$day_name}->{"${swap_hour}00"} });
-				$content_line .= ")";
-			}
 			push (@$timeline,{
 				when => $shift_datetime,
 				content_line => $content_line,
 				mark_issue => 1,
-				blank_before => 1,
+				blank_before => 0,
 			});
 		}
 
@@ -408,7 +426,7 @@ sub add_schedule {
 }
 
 sub add_schedule_file {
-	my ($sched_filename,$worked_schedule) = @_;
+	my ($sched_filename) = @_;
 
 	# make day of week decoder ring
 	my $decoder_cursor = $first_day->clone();
@@ -422,29 +440,83 @@ sub add_schedule_file {
 
 	# read file
 	my $schedule_fh;
-	open($schedule_fh,'<',$sched_filename) or die "failed to open schedule file '$sched_filename':$!";
+	open($schedule_fh,'<',$sched_filename) or croak "failed to open schedule file '$sched_filename':$!";
 
+	my $schedule_today;
 	foreach my $line (<$schedule_fh>) {
 		chomp($line);
 		if ($line =~ /^#/) {
 			print "skipping schedule line: $line\n";
-		} elsif ($line =~ /^(\w+) (\d+)-(\d+)-(\d+) (\d+)-(\d+)\t(.+)$/) {
-			die "unimplemented: $line";
-		} elsif ($line =~ /^(\w+) (\d+)-(\d+)\t([\w. ]+)$/) {
-			my ($day_of_week,$start_time,$end_time,$who) = ($1,$2,$3,$4);
-			#print "line=(dow=$day_of_week,start=$start_time,end=$end_time,who=$who)\n";
+		} elsif ( length($line) == 0 ) {
+			# empty line
+		} elsif ( $line =~ m{^(\w+) (\d+)/(\d+)/(\d+)$} ) {
+			# day heading "Day MM/DD/YYYY"
+			my ($day_of_week,$head_month,$head_day,$head_year) = ($1,$2,$3,$4);
+			croak "bad DoW $day_of_week" unless defined $canonical_day_of_week{$day_of_week};
+
+			$schedule_today = DateTime->new(
+				year      => $head_year,
+				month     => $head_month,
+				day       => $head_day,
+				hour      => 0,
+				minute    => 0,
+				second    => 0,
+				time_zone => 'Etc/UTC',
+			);
+		} elsif ( $line =~ /^(\d+)\s*-\s*(\d+)\s+([\w. ]+)$/ ) {
+			# guard scheduled
+			my ($start_time,$end_time,$who) = ($1,$2,$3,$4);
+			confess "missing day header" unless defined $schedule_today;
+
+			# remove leading 0's
 			$start_time =~ s/^0+//;
 			$end_time =~ s/^0+//;
-			push(@{ $worked_schedule->{$day_of_week}->{$start_time} }, "$who starts shift");
+
+			# split into hour/minute
+			my $start_hour = $start_time;
+			$start_hour =~ s/(\d\d)$//;
+			my $start_minute = $1;
+			croak "invalid hour $start_hour" if $start_hour > 23;
+			croak "invalid hour '$start_hour'" unless $start_hour =~ /^\d+$/;
+			croak "invalid minute $start_minute" if $start_minute > 59;
+
+			my $end_hour = $end_time;
+			$end_hour =~ s/(\d\d)$//;
+			my $end_minute = $1;
+			croak "invalid hour $end_hour" if $end_hour > 23;
+			croak "invalid hour '$end_hour'" unless $end_hour =~ /^\d+$/;
+			croak "invalid minute $end_minute" if $end_minute > 59;
+
+			# get start object
+			my $start_cursor = $schedule_today->clone();
+			$start_cursor->set( hour => $start_hour );
+			$start_cursor->add( seconds => 30 );
+			#print $start_cursor, "\n";
+
+			push (@$timeline,{
+				when => $start_cursor,
+				content_line => "shift start: $who",
+				mark_issue => 1,
+				blank_before => 0,
+			});
+
+			# get end object
+			my $end_cursor = $schedule_today->clone();
 			if ($start_time eq '2200') { # find tomorrow
-				my $dow = 0;
-				while ($day_of_week ne $days_of_weeks[$dow]) {
-					$dow++;
-				}
-				$dow++; # and now tomorrow
-				$day_of_week = $days_of_weeks[$dow];
+				$end_cursor->add( days => 1 );
 			}
-			push(@{ $worked_schedule->{$day_of_week}->{$end_time} }, "$who ends shift");
+			$end_cursor->set( hour => $end_hour );
+			$end_cursor->subtract( seconds => 30 );
+
+			push (@$timeline,{
+				when => $end_cursor,
+				content_line => "shift end: $who",
+				mark_issue => 1,
+				blank_before => 1,
+			});
+		} elsif ( $line =~ /^(\d+)\s+([\w. ]+)$/ ) {
+			# random events
+			confess "unimplemented ($line)";
 		} else {
 			warn "bad parse schedule line: '$line'";
 		}
