@@ -10,6 +10,7 @@ Takes Deggy reports in RTF and reformats them into text files while:
 * warning if extra swipes of the wand are logged
 * showing gaps with no checks
 * flagging if any "core hours" are not covered
+* integrating guard schedule with [simple text format](schedule_format.md)
 
 ## Requires
 
