@@ -6,7 +6,13 @@ use Carp;
 use Data::Dumper;
 use DateTime;
 
-my $src_file = `ls -t ~/Downloads/*.rtf | head -1`;
+my $src_dir = '~/Downloads';
+if (scalar @ARGV) {
+	$src_dir = $ARGV[0];
+}
+
+print "looking in $src_dir\n";
+my $src_file = `ls -t $src_dir/*.rtf | head -1`;
 chomp($src_file);
 my $dest_dir = '/home/chicks/Documents/git/deggy-reformatter';
 
