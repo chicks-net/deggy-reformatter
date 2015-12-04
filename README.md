@@ -25,5 +25,4 @@ Takes Deggy reports in RTF and reformats them into text files while:
 
 ## Ideas
 
-* allow arbitrary events on calendar
 * integrate schedule from a google calendar

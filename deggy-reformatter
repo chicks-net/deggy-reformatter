@@ -506,7 +506,7 @@ sub add_schedule_file {
 			);
 		} elsif ( $line =~ /^(\d+)\s*-\s*(\d+)\s+([\w. ]+)$/ ) {
 			# guard scheduled
-			my ($start_time,$end_time,$who) = ($1,$2,$3,$4);
+			my ($start_time,$end_time,$who) = ($1,$2,$3);
 			confess "missing day header" unless defined $schedule_today;
 
 			# remove leading 0's
@@ -530,7 +530,7 @@ sub add_schedule_file {
 
 			# get start object
 			my $start_cursor = $schedule_today->clone();
-			$start_cursor->set( hour => $start_hour );
+			$start_cursor->set( hour => $start_hour, minute => $start_minute );
 			$start_cursor->add( seconds => 30 );
 			#print $start_cursor, "\n";
 
@@ -546,7 +546,7 @@ sub add_schedule_file {
 			if ($start_time eq '2200') { # find tomorrow
 				$end_cursor->add( days => 1 );
 			}
-			$end_cursor->set( hour => $end_hour );
+			$end_cursor->set( hour => $end_hour, minute => $end_minute );
 			$end_cursor->subtract( seconds => 30 );
 
 			push (@$timeline,{
@@ -557,7 +557,29 @@ sub add_schedule_file {
 			});
 		} elsif ( $line =~ /^(\d+)\s+([\w. ]+)$/ ) {
 			# random events
-			confess "unimplemented ($line)";
+			my ($start_time,$what) = ($1,$2);
+			confess "missing day header" unless defined $schedule_today;
+
+			$start_time =~ s/^0+//;
+
+			# split into hour/minute
+			my $start_hour = $start_time;
+			$start_hour =~ s/(\d\d)$//;
+			my $start_minute = $1;
+			croak "invalid hour $start_hour" if $start_hour > 23;
+			croak "invalid hour '$start_hour'" unless $start_hour =~ /^\d+$/;
+			croak "invalid minute $start_minute" if $start_minute > 59;
+
+			# get start object
+			my $start_cursor = $schedule_today->clone();
+			$start_cursor->set( hour => $start_hour, minute => $start_minute );
+
+			push (@$timeline,{
+				when => $start_cursor,
+				content_line => "FYI: $what",
+				mark_issue => 1,
+				blank_before => 0,
+			});
 		} else {
 			warn "bad parse schedule line: '$line'";
 		}
