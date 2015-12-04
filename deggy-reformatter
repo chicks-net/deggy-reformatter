@@ -173,6 +173,7 @@ validations();
 post_validations();
 add_schedule();
 sort_timeline();
+issues_summary();
 
 print "\n";
 
@@ -362,6 +363,46 @@ sub sort_timeline {
 	# actually do sorting
 	my @tmp_timeline = sort { DateTime->compare( $a->{when}, $b->{when} ) } @$timeline;
 	$timeline = \@tmp_timeline;
+}
+
+sub issues_summary {
+	print "\n";
+	print "ISSUES SUMMARY\n";
+	print "~~~~~~~~~~~~~~\n";
+
+	my $saved_shift = '';
+	foreach my $entry (@$timeline) {
+		my $day_of_week = $entry->{day_of_week}; # Wednesday
+		my $line_date = $entry->{line_date};
+		my $content_line = $entry->{content_line};
+		my $blank_before = 0;	# blanks overridden in summary
+		my $mark_issue = $entry->{mark_issue};	# is it an issue and the line should start with the # symbol
+		$mark_issue = 1 unless defined $mark_issue;
+
+		if ( $content_line =~ /^shift / ) {
+			unless ( $content_line =~ /^shift start/ ) {
+				$mark_issue = 0;
+			}
+		}
+
+		$day_of_week = sprintf("%10s",$day_of_week);
+
+		# only show shift starts and issues
+		next unless ( $mark_issue );
+
+		if ( $content_line =~ /^shift start/ ) {
+			$saved_shift = "\n$day_of_week $line_date       $content_line\n";
+		} else {
+			print $saved_shift;
+			$saved_shift = '';
+			print "$day_of_week $line_date       $content_line\n";
+		}
+	}
+
+	print "\n";
+	print "\n";
+	print "COMPLETE TIMELINE\n";
+	print "~~~~~~~~~~~~~~~~~\n";
 }
 
 sub parseDate {
