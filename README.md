@@ -1,10 +1,8 @@
-deggy-reformatter
-=================
+# deggy-reformatter
 
 Take Deggy RTF files and reformat them
 
-Description
------------
+## Description
 
 Takes Deggy reports in RTF and reformats them into text files while:
 
@@ -13,14 +11,18 @@ Takes Deggy reports in RTF and reformats them into text files while:
 * showing gaps with no checks
 * flagging if any "core hours" are not covered
 
-Requires
---------
+## Requires
 
 * Perl
 * unrtf (deb/rpm is just `unrtf`)
 * Perl module DateTime (debian package `libdatetime-perl` or rpm `perl-DateTime`)
 
-Plans
------
+## Utilities
 
-* integrate schedule from a google drive spreadsheet or maybe somewhere else
+* `copier` - renames randomly named input files into `DeggyReportYYYYMMDD` based on the content
+* `downloader` - WIP to retrieve attachments from gmail
+
+## Ideas
+
+* allow arbitrary events on calendar
+* integrate schedule from a google calendar
