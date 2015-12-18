@@ -504,7 +504,7 @@ sub add_schedule_file {
 				second    => 0,
 				time_zone => 'Etc/UTC',
 			);
-		} elsif ( $line =~ /^(\d+)\s*-\s*(\d+)\s+([\w. ]+)$/ ) {
+		} elsif ( $line =~ /^(\d+)\s*-\s*(\d+)\s+([\w. -]+)$/ ) {
 			# guard scheduled
 			my ($start_time,$end_time,$who) = ($1,$2,$3);
 			confess "missing day header" unless defined $schedule_today;
