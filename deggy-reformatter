@@ -306,6 +306,7 @@ sub validations {
 sub post_validations {
 	my $day_decode;		# hashref: day number to name
 	my $date_cursor = $first_day->clone();
+	$date_cursor->subtract( days => 1 );
 	for (1..7) {
 		my $day_name = $date_cursor->day_name();
 		my $day_of_week = $date_cursor->day_of_week();
@@ -432,18 +433,24 @@ sub parseDate {
 }
 
 sub add_schedule {
+	# define timeframe
+	my $start_window = $first_day->clone();
+	$start_window->subtract( days => 1 );
+	my $end_window = $prev_end_date->clone;
+	$end_window->add( days => 1 );
+
 	# read schedule.txt
 	my $schedule_filename = 'schedule.raw';
 
 	if (-e $schedule_filename) {
-		add_schedule_file($schedule_filename);
+		add_schedule_file($schedule_filename,$start_window,$end_window);
 	} else {
 		warn "no schedule file '$schedule_filename' found";
 	}
 
 	# loop through week
-	my $date_cursor = $first_day->clone();
-	for (1..7) {
+	my $date_cursor = $start_window->clone();
+	while (DateTime->compare( $date_cursor, $end_window ) < 0) {
 		my $day_name = $date_cursor->day_name();
 		my $day_of_week = $date_cursor->day_of_week();
 
@@ -467,7 +474,7 @@ sub add_schedule {
 }
 
 sub add_schedule_file {
-	my ($sched_filename) = @_;
+	my ($sched_filename,$start_window,$end_window) = @_;
 
 	# make day of week decoder ring
 	my $decoder_cursor = $first_day->clone();
@@ -504,10 +511,19 @@ sub add_schedule_file {
 				second    => 0,
 				time_zone => 'Etc/UTC',
 			);
+
+			if (DateTime->compare( $schedule_today, $end_window ) > 0) {
+				last;
+			}
 		} elsif ( $line =~ /^(\d+)\s*-\s*(\d+)\s+([\w. -]+)$/ ) {
 			# guard scheduled
 			my ($start_time,$end_time,$who) = ($1,$2,$3);
 			confess "missing day header" unless defined $schedule_today;
+
+			# is today in window?
+			if (DateTime->compare( $schedule_today, $start_window ) < 0) {
+				next;
+			}
 
 			# remove leading 0's
 			$start_time =~ s/^0+//;
