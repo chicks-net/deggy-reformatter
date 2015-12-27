@@ -12,3 +12,21 @@ The `schedule.raw` file is formatted entries like:
 	* format: `start   what` as in `0420  party time` 
 * **blank** lines are ignored
 * **comments** should be preceded by `#` and will be printed out
+
+## Example
+
+Fri 12/04/2015
+0600 - 1400   Bob Jones
+1400 - 2200   Helen Brown
+2200 - 0600   Alana Smith
+
+Sat 12/05/2015
+0600 - 1400   Bob Jones
+1400 - 2200   Helen Brown
+2200 - 0600   Alana Smith
+
+Sun 12/06/2015
+0600 - 1000   James Jones
+1000 - 2200   Hank Brown
+2200 - 0600   John Smith
+2300 site activated
