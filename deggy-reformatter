@@ -435,7 +435,7 @@ sub parseDate {
 sub add_schedule {
 	# define timeframe
 	my $start_window = $first_day->clone();
-	$start_window->subtract( days => 1 );
+	$start_window->subtract( days => 2 );
 	my $end_window = $prev_end_date->clone;
 	$end_window->add( days => 1 );
 
