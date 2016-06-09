@@ -19,7 +19,7 @@ pm_to_blib
 *.sw[p-z]
 
 # this project
-*.txt
+./*.txt
 *.raw
 *.rtf
 
