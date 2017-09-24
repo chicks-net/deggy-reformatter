@@ -539,9 +539,10 @@ sub add_schedule_file {
 
 			my $end_hour = $end_time;
 			$end_hour =~ s/(\d\d)$//;
+			$end_hour = 0 if $end_hour eq '';
 			my $end_minute = $1;
 			croak "invalid hour $end_hour" if $end_hour > 23;
-			croak "invalid hour '$end_hour'" unless $end_hour =~ /^\d+$/;
+			croak "invalid hour '$end_hour' in $end_time" unless $end_hour =~ /^\d+$/;
 			croak "invalid minute $end_minute" if $end_minute > 59;
 
 			# get start object
